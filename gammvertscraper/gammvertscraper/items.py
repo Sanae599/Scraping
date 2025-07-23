@@ -5,8 +5,27 @@
 
 import scrapy
 
+class CategoryItem(scrapy.Item):
+    name = scrapy.Field()
+    url = scrapy.Field()
+    category_id = scrapy.Field()
+    parent_id = scrapy.Field()  
+    is_pager = scrapy.Field() 
 
-class GammvertscraperItem(scrapy.Item):
-    # define the fields for your item here like:
-    # name = scrapy.Field()
-    pass
+class ProductItem(scrapy.Item):
+    product_id      = scrapy.Field() 
+    name            = scrapy.Field()
+    url             = scrapy.Field()
+    category_id     = scrapy.Field()  #FK vers CategoryItem
+    price           = scrapy.Field()
+    currency        = scrapy.Field()
+    availability    = scrapy.Field()  
+    stock_qty       = scrapy.Field()
+    pickup_available= scrapy.Field()
+    shipping_cost   = scrapy.Field()
+    shipping_volume = scrapy.Field()
+    brand           = scrapy.Field()
+    description     = scrapy.Field()
+    rating          = scrapy.Field()  
+    num_reviews     = scrapy.Field()  
+    page_number     = scrapy.Field()  #debug
