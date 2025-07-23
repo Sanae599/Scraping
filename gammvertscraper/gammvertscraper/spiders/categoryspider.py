@@ -17,21 +17,6 @@ class TopCategoriesSpider(scrapy.Spider):
         },
     }
 
-    # def parse(self, response):
-    #     navbar = response.css('nav')
-    #     for cat in navbar:
-    #         cat_item = CategoryItem()
-    #         cat_item['name'] = cat.css('.ens-main-navigation-items__link-label::text').getall()            
-    #         cat_relative_url = cat.css("a[href^='/c/']::attr(href)").getall()
-    #         cat_item['url'] = 'https://www.gammvert.fr/' + cat_relative_url
-
-    #         #cat_item['category_id'] = self.generate_id(cat_item['name'],cat_item['url'])
-    #         cat_item['category_id'] = "singe"
-    #         cat_item['parent_id'] = None
-    #         cat_item['is_pager'] = 0
-
-    #         #yield response.follow(cat_item['url'],callback=self.parse_subcat)
-    #         yield cat_item
     def parse(self, response):
         menu_items = response.css('li.ens-main-navigation-items__item')
         for cat in menu_items:
@@ -48,15 +33,37 @@ class TopCategoriesSpider(scrapy.Spider):
             cat_item = CategoryItem()
             cat_item['name'] = cat_name.strip()
             cat_item['url'] = cat_url
-            cat_item['category_id'] = self.generate_id(cat_item['name'], cat_item['url'])
+            category_id = self.generate_id(cat_item['name'], cat_item['url'])
+            cat_item['category_id'] = category_id
             cat_item['parent_id'] = None
             cat_item['is_pager'] = 0
 
             yield cat_item
+            yield response.follow(cat_item['url'],callback=self.parse_subcat, meta={'parent_id':category_id})
 
 
-    def parse_subcat(self,resonse):
-        pass
+    def parse_subcat(self,response):
+        parent_id = response.meta.get('parent_id')
+        cards = response.css('section.ens-category-list a.ens-category-list__item')
+        if cards:
+            for card in cards:
+                name = card.css('h3.ds-ens-card__title::text').get()
+                relative_url = card.css('::attr(href)').get()
+
+                if not name or not relative_url:
+                    continue
+
+                full_url = response.urljoin(relative_url)
+                category_id = self.generate_id(name, full_url)
+
+                subcat_item = CategoryItem()
+                subcat_item['name'] = name.strip()
+                subcat_item['url'] = full_url
+                subcat_item['category_id'] = category_id
+                subcat_item['parent_id'] = parent_id
+                subcat_item['is_pager'] = 0
+
+                yield subcat_item
 
     def generate_id(self, name, url):
         name_part = name.strip().lower().replace(" ", "_")
