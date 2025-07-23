@@ -17,24 +17,48 @@ class TopCategoriesSpider(scrapy.Spider):
         },
     }
 
-    def parse(self, response):
-        navbar = response.css('nav')
-        for cat in navbar:
-            cat_item = CategoryItem()
-            cat_item['name'] = cat.css('.ens-main-navigation-items__link-label::text').getall()            
-            cat_relative_url = cat.css("a[href^='/c/']::attr(href)").getall()
-            cat_item['url'] = 'https://www.gammvert.fr/' + cat_relative_url
+    # def parse(self, response):
+    #     navbar = response.css('nav')
+    #     for cat in navbar:
+    #         cat_item = CategoryItem()
+    #         cat_item['name'] = cat.css('.ens-main-navigation-items__link-label::text').getall()            
+    #         cat_relative_url = cat.css("a[href^='/c/']::attr(href)").getall()
+    #         cat_item['url'] = 'https://www.gammvert.fr/' + cat_relative_url
 
-            #cat_item['category_id'] = self.generate_id(cat_item['name'],cat_item['url'])
-            cat_item['category_id'] = "singe"
+    #         #cat_item['category_id'] = self.generate_id(cat_item['name'],cat_item['url'])
+    #         cat_item['category_id'] = "singe"
+    #         cat_item['parent_id'] = None
+    #         cat_item['is_pager'] = 0
+
+    #         #yield response.follow(cat_item['url'],callback=self.parse_subcat)
+    #         yield cat_item
+    def parse(self, response):
+        menu_items = response.css('li.ens-main-navigation-items__item')
+        for cat in menu_items:
+            cat_name = cat.css('.ens-main-navigation-items__link-label::text').get()
+            if not cat_name:
+                continue
+
+            cat_relative_url = cat.css("a[href^='/c/']::attr(href)").get()
+            if not cat_relative_url or cat_relative_url in EXCLUDE:
+                continue
+
+            cat_url = response.urljoin(cat_relative_url)
+
+            cat_item = CategoryItem()
+            cat_item['name'] = cat_name.strip()
+            cat_item['url'] = cat_url
+            cat_item['category_id'] = self.generate_id(cat_item['name'], cat_item['url'])
             cat_item['parent_id'] = None
             cat_item['is_pager'] = 0
 
-            #yield response.follow(cat_item['url'],callback=self.parse_subcat)
             yield cat_item
+
+
     def parse_subcat(self,resonse):
         pass
 
-    def generate_id(name,url):
-        new_id = name.strip().lower().replace(" ","_") + "_" + url.strip().lower().replace("/","_").strip("_")
-        return new_id
+    def generate_id(self, name, url):
+        name_part = name.strip().lower().replace(" ", "_")
+        url_part = url.strip().lower().replace("/", "_").strip("_")
+        return f"{name_part}_{url_part}"
