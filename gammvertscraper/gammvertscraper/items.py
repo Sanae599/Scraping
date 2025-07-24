@@ -18,6 +18,10 @@ class ProductItem(scrapy.Item):
     url             = scrapy.Field()
     category_id     = scrapy.Field()  #FK vers CategoryItem
     price           = scrapy.Field()
+    price_init      = scrapy.Field()
+    price_reduc     = scrapy.Field()
+    price_final     = scrapy.Field()
+    categories      = scrapy.Field()
     currency        = scrapy.Field()
     availability    = scrapy.Field()  
     stock_qty       = scrapy.Field()
