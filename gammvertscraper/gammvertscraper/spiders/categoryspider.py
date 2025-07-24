@@ -3,69 +3,93 @@ from gammvertscraper.items import CategoryItem
 
 EXCLUDE = {"/c/destockage"}
 
-class TopCategoriesSpider(scrapy.Spider):
-    name = "top_categories"
+class RecursiveCategoriesSpider(scrapy.Spider):
+    name = "recursive_categories"
     allowed_domains = ["gammvert.fr"]
-    start_urls = ["https://www.gammvert.fr"] 
+    start_urls = ["https://www.gammvert.fr"]
 
     custom_settings = {
         "ROBOTSTXT_OBEY": False,
+        "DOWNLOAD_DELAY": 0.5,
+        "CONCURRENT_REQUESTS_PER_DOMAIN": 2,
         "DEFAULT_REQUEST_HEADERS": {
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
             "Accept-Language": "fr-FR,fr;q=0.9,en;q=0.8",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
         },
     }
 
     def parse(self, response):
-        menu_items = response.css('li.ens-main-navigation-items__item')
-        for cat in menu_items:
-            cat_name = cat.css('.ens-main-navigation-items__link-label::text').get()
-            if not cat_name:
+        #Top-catégories dans le menu principal
+        for a in response.css('li.ens-main-navigation-items__item a[href^="/c/"]'):
+            href = a.attrib["href"]
+            if href in EXCLUDE:
                 continue
+            url = response.urljoin(href)
+            name = a.css('.ens-main-navigation-items__link-label::text').get().strip()
+            cat_id = self.generate_id(name, url)
 
-            cat_relative_url = cat.css("a[href^='/c/']::attr(href)").get()
-            if not cat_relative_url or cat_relative_url in EXCLUDE:
-                continue
+            yield CategoryItem(
+                name=name,
+                url=url,
+                category_id=cat_id,
+                parent_id=None,
+                is_pager=0
+            )
+            yield response.follow(
+                url,
+                callback=self.parse_category,
+                meta={'parent_id': cat_id}
+            )
 
-            cat_url = response.urljoin(cat_relative_url)
+    def parse_category(self, response):
+        parent_id = response.meta['parent_id']
 
-            cat_item = CategoryItem()
-            cat_item['name'] = cat_name.strip()
-            cat_item['url'] = cat_url
-            category_id = self.generate_id(cat_item['name'], cat_item['url'])
-            cat_item['category_id'] = category_id
-            cat_item['parent_id'] = None
-            cat_item['is_pager'] = 0
+        #1)recherche de sous-catégories classiques
+        nodes = response.css('section.ens-category-list a.ens-category-list__item')
+        #2) si aucune, on regarde dans le bandeau sous-catégories" des pages produits
+        if not nodes:
+            nodes = response.css('div.ens-product-list-categories__list a.ens-product-list-categories__item')
 
-            yield cat_item
-            yield response.follow(cat_item['url'],callback=self.parse_subcat, meta={'parent_id':category_id})
-
-
-    def parse_subcat(self,response):
-        parent_id = response.meta.get('parent_id')
-        cards = response.css('section.ens-category-list a.ens-category-list__item')
-        if cards:
-            for card in cards:
-                name = card.css('h3.ds-ens-card__title::text').get()
-                relative_url = card.css('::attr(href)').get()
-
-                if not name or not relative_url:
+        #Si on trouve des sous-catégories → on poursuit la récursion
+        if nodes:
+            for node in nodes:
+                name = node.css('h3.ds-ens-card__title::text, ::text').get().strip()
+                href = node.attrib.get('href')
+                if not href:
                     continue
+                url = response.urljoin(href)
+                cat_id = self.generate_id(name, url)
 
-                full_url = response.urljoin(relative_url)
-                category_id = self.generate_id(name, full_url)
+                yield CategoryItem(
+                    name=name,
+                    url=url,
+                    category_id=cat_id,
+                    parent_id=parent_id,
+                    is_pager=0
+                )
+                yield response.follow(
+                    url,
+                    callback=self.parse_category,
+                    meta={'parent_id': cat_id}
+                )
+            return
 
-                subcat_item = CategoryItem()
-                subcat_item['name'] = name.strip()
-                subcat_item['url'] = full_url
-                subcat_item['category_id'] = category_id
-                subcat_item['parent_id'] = parent_id
-                subcat_item['is_pager'] = 0
+        #Sinon → page finale (liste de produits)
+        #On crée un item pour marquer ce niveau comme page de produits
+        title = response.css('h1::text').get(default='').strip()
+        url   = response.url
+        cat_id = self.generate_id(title or "unknown", url)
 
-                yield subcat_item
+        yield CategoryItem(
+            name=title,
+            url=url,
+            category_id=cat_id,
+            parent_id=parent_id,
+            is_pager=1
+        )
 
     def generate_id(self, name, url):
-        name_part = name.strip().lower().replace(" ", "_")
-        url_part = url.strip().lower().replace("/", "_").strip("_")
+        name_part = name.lower().replace(" ", "_")
+        url_part  = url.lower().replace("://", "_").replace("/", "_").strip("_")
         return f"{name_part}_{url_part}"
