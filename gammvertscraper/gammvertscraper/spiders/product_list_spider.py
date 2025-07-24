@@ -4,7 +4,7 @@ import re
 from urllib.parse import urljoin, urlparse, parse_qs, urlencode, urlunparse
 
 class ProductListSpider(scrapy.Spider):
-    name = "ProductListSpidertest"
+    name = "ProductListSpider"
     allowed_domains = ["gammvert.fr"]
     start_urls = ["https://www.gammvert.fr/c/agrumes"]
 
