@@ -23,6 +23,7 @@ class RecursiveCategoriesSpider(scrapy.Spider):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.visited_ids = set()
+        self.root_categories_ids = set()
 
     def parse(self, response):
         # Top-catégories dans le menu principal
@@ -33,6 +34,8 @@ class RecursiveCategoriesSpider(scrapy.Spider):
             url = response.urljoin(href)
             name = a.css('.ens-main-navigation-items__link-label::text').get().strip()
             cat_id = self.generate_id(name, url)
+
+            self.root_categories_ids.add(cat_id)
 
             loader = ItemLoader(item=CategoryItem())
             loader.add_value("name", name)
@@ -69,16 +72,18 @@ class RecursiveCategoriesSpider(scrapy.Spider):
             nodes = response.css('div.ens-product-list-categories__list a.ens-product-list-categories__item')
 
         is_pagelist = 0 if nodes else 1
+        
+        # Si c’est une racine, on ne re-yield pas (on l’a déjà yield dans parse)
+        if cat_id not in self.root_categories_ids:
+            loader = ItemLoader(item=CategoryItem())
+            loader.add_value("name", title)
+            loader.add_value("url", url)
+            loader.add_value("category_id", cat_id)
+            loader.add_value("parent_id", parent_id)
+            loader.add_value("is_pagelist", is_pagelist)
+            item = loader.load_item()
 
-        loader = ItemLoader(item=CategoryItem())
-        loader.add_value("name", title)
-        loader.add_value("url", url)
-        loader.add_value("category_id", cat_id)
-        loader.add_value("parent_id", parent_id)
-        loader.add_value("is_pagelist", is_pagelist)
-        item = loader.load_item()
-
-        yield item
+            yield item
 
         # Puis on suit les sous-catégories
         for node in nodes:
