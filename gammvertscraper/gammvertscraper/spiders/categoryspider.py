@@ -34,7 +34,7 @@ class RecursiveCategoriesSpider(scrapy.Spider):
                 url=url,
                 category_id=cat_id,
                 parent_id=None,
-                is_pager=0
+                is_pagelist=0
             )
             yield response.follow(
                 url,
@@ -66,7 +66,7 @@ class RecursiveCategoriesSpider(scrapy.Spider):
                     url=url,
                     category_id=cat_id,
                     parent_id=parent_id,
-                    is_pager=0
+                    is_pagelist=0
                 )
                 yield response.follow(
                     url,
@@ -86,7 +86,7 @@ class RecursiveCategoriesSpider(scrapy.Spider):
             url=url,
             category_id=cat_id,
             parent_id=parent_id,
-            is_pager=1
+            is_pagelist=1
         )
 
     def generate_id(self, name, url):
