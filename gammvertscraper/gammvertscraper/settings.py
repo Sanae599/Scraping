@@ -64,8 +64,9 @@ ITEM_PIPELINES = {
     'gammvertscraper.pipelines.ValidateCategoriesPipeline': 200,
     'gammvertscraper.pipelines.DedupeCategoriesPipeline':   300,
     'gammvertscraper.pipelines.CsvCategoriesPipeline':      400,
-    'gammvertscraper.pipelines.ConvertPricePipeline': 500,
-    'gammvertscraper.pipelines.CsvProductsPipeline': 600,
+    'gammvertscraper.pipelines.CleanProductsPipeline' : 500,
+    'gammvertscraper.pipelines.ConvertPricePipeline': 600,
+    'gammvertscraper.pipelines.CsvProductsPipeline': 700,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)

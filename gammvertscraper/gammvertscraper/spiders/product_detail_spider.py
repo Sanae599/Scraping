@@ -17,8 +17,6 @@ class ProductDetailSpider(scrapy.Spider):
     }
 
     def start_requests(self):
-        # Vous pouvez soit lire les URLs depuis un fichier ou une base de données,
-        # soit les passer directement ici pour le test.
         json_file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'productli.json')
         with open(json_file_path, 'r', encoding='utf-8') as file:
             products = json.load(file)
