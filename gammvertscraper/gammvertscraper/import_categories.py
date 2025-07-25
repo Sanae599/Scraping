@@ -5,11 +5,11 @@ import os
 DB_PATH = 'gammvert.db'
 CSV_PATH = 'categories.csv'
 
-#1) Connexion (le fichier est créé s'il n'existe pas)
+#Connexion (le fichier est créé s'il n'existe pas)
 conn = sqlite3.connect(DB_PATH)
 cur  = conn.cursor()
 
-#2) Supprimer et recréer la table
+#Supprimer et recréer la table
 cur.execute("DROP TABLE IF EXISTS categories;")
 cur.execute("""
     CREATE TABLE categories (
@@ -21,7 +21,7 @@ cur.execute("""
     )
 """)
 
-#3) Charger le CSV
+#Charger le CSV
 with open(CSV_PATH, newline='', encoding='utf-8') as f:
     reader = csv.DictReader(f)
     to_db = [
@@ -35,13 +35,13 @@ with open(CSV_PATH, newline='', encoding='utf-8') as f:
         for row in reader
     ]
 
-#4)Insérer les data
+#Insérer les data
 cur.executemany(
     "INSERT INTO categories (category_id, parent_id, name, url, is_pagelist) VALUES (?, ?, ?, ?, ?);",
     to_db
 )
 
-# 5)Valider et fermer
+#Valider et fermer
 conn.commit()
 conn.close()
 
