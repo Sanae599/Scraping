@@ -1,3 +1,4 @@
+
 # Scrapy settings for gammvertscraper project
 #
 # For simplicity, this file contains only settings considered important or
@@ -59,7 +60,12 @@ DOWNLOADER_MIDDLEWARES = {
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-    "gammvertscraper.pipelines.GammvertscraperPipeline": 300,
+    'gammvertscraper.pipelines.CleanCategoriesPipeline':     100,
+    'gammvertscraper.pipelines.ValidateCategoriesPipeline': 200,
+    'gammvertscraper.pipelines.DedupeCategoriesPipeline':   300,
+    'gammvertscraper.pipelines.CsvCategoriesPipeline':      400,
+    'gammvertscraper.pipelines.ConvertPricePipeline': 500,
+    'gammvertscraper.pipelines.CsvProductsPipeline': 600,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
